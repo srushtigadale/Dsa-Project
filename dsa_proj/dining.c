@@ -34,7 +34,7 @@ while (itemCount < MAX_ITEMS && fscanf(fp, "%49[^,],%lf\n", menu[itemCount].name
 
 
     fclose(fp);
-
+    int c;
     // Print the menu
     printf("Today's Menu:\n");
     printf("\n");
@@ -42,6 +42,15 @@ while (itemCount < MAX_ITEMS && fscanf(fp, "%49[^,],%lf\n", menu[itemCount].name
         printf("%-30s %.2lf\n", menu[i].name, menu[i].price);
         printf("\n");
     }
+    FILE *f;
+    f = fopen("order.csv" , "w+");
 
+    while(1){
+        printf("Enter the number of the ithem you want to order. Press -1 to stop");
+        scanf("%d" , &c);
+        if(c == -1)
+            break;
+        fprintf(f ,"%s , %d\n" , menu[c-1].name ,(int) menu[c-1].price);
+    }
     return 0;
 }
