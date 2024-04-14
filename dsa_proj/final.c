@@ -4,14 +4,19 @@
 #include <string.h>
 #define MAX_ITEMS 100
 #define MAX_NAME_LENGTH 50
+double totalincome = 0;
+typedef struct queue_node {
+    int num_people;
+    struct queue_node* next;
+} queue_node;
 typedef struct queue_nodec {
     char *itemname;
     struct queue_nodec* next;
 } queue_nodec;
-// typedef struct {
-//     queue_nodec* front;
-//     queue_nodec* rear;
-// } queue;
+typedef struct {
+    queue_node* front;
+    queue_node* rear;
+} queue;
 struct MenuItem {
     char name[MAX_NAME_LENGTH];
     double price;
@@ -46,6 +51,9 @@ void init_list(list *head){
 void init_queuec(queuec* q) {
     q->front = q->rear = NULL;
 }
+void init_queue1(queue* q) {
+    q->front = q->rear = NULL;
+}
 void init_section(section* s, int total_tables_in_section, int chair) {
     s->no_of_tables = total_tables_in_section;
     s->chairs = chair;
@@ -69,20 +77,42 @@ void init_restaurant(restaurant* r, int sections) {
     }
 }
 void create_node(list *head ,char ordern[] , double p ){
+    // printf("I'm here");
     node *nn = (node*)malloc(sizeof(node));
     nn->ordername = (char*)malloc(strlen(ordern));
+    nn->ordername = ordern;
     nn->price = p;
     nn->next = NULL;
-    if(*head == NULL)
+    if(*head == NULL){
         *head = nn;
+        return;
+    }
     node *temp = *head;
     while(temp->next != NULL){
+        // printf("srush");
         temp = temp->next;
     }
     temp->next = nn;
 }
 int is_empty(queuec* q) {
     return q->front == NULL;
+}
+int is_empty1(queue* q) {
+    return q->front == NULL;
+}
+int dequeue(queue* q) {
+    if (is_empty1(q)) {
+        fprintf(stderr, "Queue is empty\n");
+        exit(EXIT_FAILURE);
+    }
+    queue_node* temp = q->front;
+    int data = temp->num_people;
+    q->front = q->front->next;
+    free(temp);
+    if (q->front == NULL) {
+        q->rear = NULL;
+    }
+    return data;
 }
 void enqueuec(queuec* q, char order_name[]) {
     queue_nodec* new_node = (queue_nodec*)malloc(sizeof(queue_nodec));
@@ -100,6 +130,7 @@ void enqueuec(queuec* q, char order_name[]) {
         q->rear = new_node;
     }
 }
+
 void take_the_order(section *sec , int t1 , queuec* chefq){
     init_list(&sec->t[t1].order);
     int c;
@@ -130,11 +161,31 @@ while(1){
         if(c == -1)
             break;
         create_node(&sec->t[t1].order,menu[c-1].name,menu[c-1].price);
+        // printf("hey");
         enqueuec(chefq ,menu[c-1].name);
-        //fprintf(f ,"%s , %d\n" , menu[c-1].name ,(int) menu[c-1].price);
+        // printf("yo");
+        // printf("order is - %s , %d\n" , menu[c-1].name ,(int) menu[c-1].price);
     }
 }
-void occupy_tables(restaurant* r, int num_people,queuec *chefq) {
+
+void deoccupy_tables(restaurant *r , section *sec , int t1 ,queuec *chefq, queue *waitlist){
+    // sec->
+    sec->t[t1].occupied = 0;
+    double bill = 0;
+    node *temp = sec->t[t1].order;
+    printf("Bill\n");
+    while (temp){
+        printf("%s\t%f\n" , temp->ordername , temp->price);
+        bill += temp->price;
+        temp = temp->next;
+    }
+    printf("Total money to be paid is %f\nThankyou for visiting, Comeagain!" , bill);
+    totalincome += bill;
+    // return ;
+    
+}
+void occupy_tables(restaurant* r, int num_people,queuec *chefq , queue *waitlist) {
+    int n;
     int temp1, temp2;
     int flag = 0;
     temp2 = 10000;
@@ -173,6 +224,22 @@ void occupy_tables(restaurant* r, int num_people,queuec *chefq) {
                     flag =1;
                     printf("Table %d allocated\n", j + 1);
                     take_the_order(chosen_section , j+1,chefq);
+                    while(1){
+                    printf("Your order has been served.\nIf you wish to order more press 1 or press 2 to proceed towards billing");
+                    scanf("%d" , &n);
+                    if(n == 1){
+                        take_the_order(chosen_section , j+1,chefq);
+                    }
+                    else if (n == 2){
+                         deoccupy_tables(r , chosen_section , j+1 ,chefq, waitlist);
+                         if(!is_empty1(waitlist)){
+                            int num_of_ppl =  dequeue(waitlist);
+                            occupy_tables(r ,num_of_ppl,chefq,waitlist );   
+    }
+                        // fillerfunc(r , chosen_section , j+1 ,chefq, waitlist);
+                        break;
+                    }
+                }
                     break;
                 }
             }
@@ -188,6 +255,18 @@ void occupy_tables(restaurant* r, int num_people,queuec *chefq) {
                             printf("Table %d allocated\n", k + 1);
                             printf("Tables occupied successfully in section %d!\n", chosen_section_index + 1);
                             take_the_order(chosen_section , j+1,chefq);
+                            take_the_order(chosen_section , j+1,chefq);
+                    while(1){
+                    printf("Your order has been served.\nIf you wish to order more press 1 or press 2 to proceed towards billing");
+                    scanf("%d" , &n);
+                    if(n == 1){
+                        take_the_order(chosen_section , j+1,chefq);
+                    }
+                    else if (n == 2){
+                         deoccupy_tables(r , chosen_section , j+1 ,chefq, waitlist);
+                         if(!is_empty1(waitlist)){
+                            int num_of_ppl =  dequeue(waitlist);
+                            occupy_tables(r ,num_of_ppl,chefq,waitlist );  } 
                             flag =1;
                             break;
                             // return; // No need to continue after assigning tables
@@ -196,18 +275,25 @@ void occupy_tables(restaurant* r, int num_people,queuec *chefq) {
                 }
             }
         }
+                }
+            }
     }
+
     //else { printf("Sorry, there are not enough seats available in any section.\n");}
     if(flag == 0){printf("Sorry, there are not enough seats available in any section.\n");}
 
-}
+    }
+
 int main() {
     restaurant r;
     init_restaurant(&r, 2);
     // occupy_tables(&r, 4);
     queuec chefq;
+    queue waitlist;
+    init_queue1(&waitlist);
     init_queuec(&chefq);
-    occupy_tables(&r, 2 , &chefq);
+    occupy_tables(&r, 6 , &chefq , &waitlist);
+    
     // occupy_tables(&r, 6);
     printf("end");
     return 0;
