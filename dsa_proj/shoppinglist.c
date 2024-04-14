@@ -1,0 +1,14 @@
+honey,175
+salt,40
+chocolate,200
+yogurt,50
+milk,40
+rice,60
+oatmeal,75
+flour,50
+meat,200
+apples,60
+lemon,15
+oil,350
+ginger,45
+onions,40
