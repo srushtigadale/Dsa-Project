@@ -49,6 +49,24 @@ void enqueue(queue* q, int num_people) {
     }
 }
 
+int dequeue_waitlist(queue* q) {
+    if (is_empty(q)) {
+        printf("Queue is empty\n");
+        return -1; 
+    }
+
+    int num_people = q->front->num_people;
+    queue_node* temp = q->front;
+    q->front = q->front->next;
+    free(temp);
+
+    if (q->front == NULL) {
+        q->rear = NULL;
+    }
+    return num_people;
+}
+
+
 // Display the customers in the queue along with node numbers
 void display_queue(queue* q) {
     if (is_empty(q)) {
@@ -209,8 +227,8 @@ void take_the_order(restaurant *res,int sec , int t1 , queuec* chefq){
     }
 
     int i = 0;
-    
-    init_list(&(res->array_of_all_sections[sec - 1].t[t1].order));
+    if(res->array_of_all_sections[sec - 1].t[t1].order == NULL)
+        init_list(&(res->array_of_all_sections[sec - 1].t[t1].order));
     
     int c;
 
@@ -245,36 +263,10 @@ void take_the_order(restaurant *res,int sec , int t1 , queuec* chefq){
         }
     printf("%d\n",i);
     i++;
+
+    printf("Chef is delivering the order...\n");
 }
 
-
-
-void deoccupy_tables(restaurant *r , int sec , int t1 ,queuec *chefq, queue *waitlist){
-    if(sec > r->no_of_sections){
-        printf("section not in restaurant\n");
-        return;
-    }
-    if(t1 > r->array_of_all_sections[sec-1].no_of_tables){
-        printf("Table not in section\n");
-        return;
-    }
-    r->array_of_all_sections[sec-1].t[t1].occupied=0;
-    double bill = 0;
-    node *temp = r->array_of_all_sections[sec-1].t[t1].order;
-    printf("Bill\n");
-    while (temp){
-        printf("%s\t%.2f\n" , temp->ordername , temp->price);
-        bill += temp->price;
-        node* to_free = temp;
-        temp = temp->next;
-        free(to_free->ordername); // Free the allocated memory for order name
-        free(to_free);
-    }
-    printf("Total money to be paid is %f\nThankyou for visiting, Comeagain!" , bill);
-    totalincome += bill;
-    // return ;
-    
-}
 
 
 void occupy_tables(restaurant* r, int num_people, queue *q) {
@@ -355,6 +347,39 @@ void occupy_tables(restaurant* r, int num_people, queue *q) {
     }
     
 }
+
+void deoccupy_tables(restaurant *r , int sec , int t1 ,queuec *chefq, queue *waitlist){
+    if(sec > r->no_of_sections){
+        printf("section not in restaurant\n");
+        return;
+    }
+    if(t1 > r->array_of_all_sections[sec-1].no_of_tables){
+        printf("Table not in section\n");
+        return;
+    }
+    r->array_of_all_sections[sec-1].t[t1].occupied=0;
+    double bill = 0;
+    node *temp = r->array_of_all_sections[sec-1].t[t1].order;
+    printf("Bill\n");
+    while (temp){
+        printf("%s\t%.2f\n" , temp->ordername , temp->price);
+        bill += temp->price;
+        node* to_free = temp;
+        temp = temp->next;
+        free(to_free->ordername); // Free the allocated memory for order name
+        free(to_free);
+    }
+    printf("Total money to be paid is %f\nThankyou for visiting, Comeagain!" , bill);
+    totalincome += bill;
+
+    int waiting_group_size = dequeue_waitlist(waitlist);
+    if (waiting_group_size != -1) {
+        occupy_tables(r, waiting_group_size, waitlist);
+    }
+    // return ;
+    
+}
+
 
 struct Item {
     int id;
@@ -447,7 +472,7 @@ int main() {
                 printf("Enter table no to order from: ");
                 scanf("%d", &tableno);
                 take_the_order(&r, section, tableno, &chefq);
-                printf("Chef is delivering the order...\n");
+                
                 break;
             case 3:
                 printf("Enter section to deoccupy: ");
@@ -455,6 +480,11 @@ int main() {
                 printf("Enter table no to deoccupy: ");
                 scanf("%d", &tableno);
                 deoccupy_tables(&r, section, tableno, &chefq, &waitlist);
+                // int watingppl = 0;
+                // watingppl = dequeue_waitlist(&waitlist);
+                // if (watingppl != -1){
+                //     occupy_tables(&r, watingppl, &waitlist);
+                // }
                 break;
             case 4:
                 printf("Viewing total sales: %f\n", totalincome - spending);
@@ -467,12 +497,12 @@ int main() {
                 spending += chefshops();
                 break;
             case 7:
-                printf("Exiting the program.\n");
+                printf("Restaurant Closed.Exiting the program.\n");
                 break;
             default:
-                printf("Invalid choice. Please enter a number between 1 and 5.\n");
+                printf("Invalid choice. Please enter a number between 1 and 7.\n");
         }
-    } while (choice != 5);
+    } while (choice != 7);
 
     return 0;
 }
